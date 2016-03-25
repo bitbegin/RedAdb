@@ -258,49 +258,49 @@ adb-array: allocate MAX-ADBS-ALLOWED * size? adb-info-struct
 adb-ptr: as adb-info-struct adb-array
 
 get-adb-handle: func [
-	adb-index [integer!]
+	iadb [integer!]
 	return: [adb-info-struct]
 ][
-	adb-ptr + adb-index
+	adb-ptr + iadb
 ]
 
 get-local-id*: func [
-	adb-index [integer!]
+	iadb 	[integer!]
 	return: [integer!]
 	/local
 		adb	[adb-info-struct]
 ][
-	adb: adb-ptr + adb-index
+	adb: adb-ptr + iadb
 	adb/local-id
 ]
 
 get-remote-id*: func [
-	adb-index [integer!]
+	iadb 	[integer!]
 	return: [integer!]
 	/local
 		adb	[adb-info-struct]
 ][
-	adb: adb-ptr + adb-index
+	adb: adb-ptr + iadb
 	adb/remote-id
 ]
 
 set-local-id*: func [
-	adb-index [integer!]
+	iadb 	[integer!]
 	local-id [integer!]
 	/local
 		adb	[adb-info-struct]
 ][
-	adb: adb-ptr + adb-index
+	adb: adb-ptr + iadb
 	adb/local-id: local-id
 ]
 
 set-remote-id*: func [
-	adb-index [integer!]
+	iadb 	[integer!]
 	remote-id [integer!]
 	/local
 		adb	[adb-info-struct]
 ][
-	adb: adb-ptr + adb-index
+	adb: adb-ptr + iadb
 	adb/remote-id: remote-id
 ]
 
@@ -461,18 +461,18 @@ init-device*: func [return: [integer!]
 	return last-adb-err
 ]
 
-close-device*: func [adb-index [integer!]
+close-device*: func [iadb [integer!]
 	/local
 		adb		[adb-info-struct]
 ][
-	adb: get-adb-handle adb-index
+	adb: get-adb-handle iadb
 	if adb/interface = 0 [WinUsb_Free adb/interface]
 	if adb/device = 0 [CloseHandle adb/device]
 	if adb/device-set = 0 [SetupDiDestroyDeviceInfoList adb/device-set]
 ]
 
 pipe*: func [
-	adb-index [integer!]
+	iadb 	[integer!]
 	data	[red-string!]
 	write	[logic!]
 	return: [integer!]
@@ -486,7 +486,7 @@ pipe*: func [
 		num					[integer!]
 		p					[c-string!]
 ][
-	adb: get-adb-handle adb-index
+	adb: get-adb-handle iadb
 
 	s: GET_BUFFER(data)
 	p: as c-string! s/offset
@@ -513,7 +513,7 @@ pipe*: func [
 	if write [
 		if transferred/1 <> len [
 			unless zero? ovlap/hEvent [CloseHandle ovlap/hEvent]
-			close-device* adb-index
+			close-device* iadb
 			last-adb-err: ADB-WRITE-PIPO
 			return last-adb-err
 		]
