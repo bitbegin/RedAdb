@@ -79,18 +79,6 @@ adb-driver: context [
 		]
 	]
 
-	;; higher level
-	init: func [return: [integer!]
-		/local
-			ret		[integer!]
-	][
-		if ret: init-device [usb-mode: yes return ret]
-	]
-
-	close: func [][
-		if usb-mode [close-device]
-	]
-
 	read: func [
 		adb			[integer!]
 		data		[string!]
@@ -112,6 +100,20 @@ adb-driver: context [
 			;-- TCP mode
 		]
 	]
+	
+	;; higher level
+	init: func [return: [integer!]
+		/local
+			ret		[integer!]
+	][
+		if ret: init-device [usb-mode: yes return ret]
+	]
+
+	close: func [][
+		if usb-mode [close-device]
+	]
+
+
 
 
 
