@@ -1,7 +1,7 @@
 Red []
 
 #system [
-	#include %adb-driver.reds
+	#include %adb-windows.reds
 	int-to-bin: func [int [integer!] return: [red-binary!]
 		/local
 			bin [red-binary!]
@@ -20,26 +20,11 @@ Red []
 ]
 
 adb-driver: context [
-	get-max-adbs: routine [return: [integer!]][
-		max-adbs
-	]
 
-	init: routine [return: [integer!]][
-		init-device
-	]
+	adb-mode: no
 
-	close: routine [
-		/local
-			adb-handle	[adb-info-struct]
-			index		[integer!]
-	][
-		index: max-adbs
-		while [index > 0][
-			adb-handle: get-adb-handle index
-			close-device adb-handle
-			index: index - 1
-		]
-		max-adbs: 0
+	get-adbs: routine [return: [integer!]][
+		adbs
 	]
 
 	get-error: routine [return: [string!]
@@ -58,9 +43,74 @@ adb-driver: context [
 		string/load text length? text UTF-8
 	]
 
-	int-to-buffer: routine [int [integer!] return: [binary!]
+	int-to-bin: routine [int [integer!] return: [binary!]
 	][
 		int-to-bin int
+	]
+
+	init-device: routine [return: [integer!]][
+		init-device
+	]
+
+	close-device: routine [
+		/local
+			adb			[adb-info-struct]
+			index		[integer!]
+	][
+		index: adbs
+		while [index > 0][
+			adb: get-adb-handle index
+			close-device adb
+			index: index - 1
+		]
+		adbs: 0
+	]
+
+	pipo: routine [
+		adb-index 		[integer!]
+		data			[string!]
+		return: 		[integer!]
+		/write /read
+	][
+		either write [
+			pipo adb-index data 1
+		][
+			pipo adb-index data 0
+		]
+	]
+
+	;; higher level
+	init: func [return: [integer!]
+		/local
+			ret		[integer!]
+	][
+		if ret: init-device [usb-mode: yes return ret]
+	]
+
+	close: func [][
+		if usb-mode [close-device]
+	]
+
+	read: func [
+		adb			[integer!]
+		data		[string!]
+	][
+		either adb-mode [
+			pipe/read adb data
+		][
+			;-- TCP mode
+		]
+	]
+
+	write: func [
+		adb			[integer!]
+		data		[string! binary!]
+	][
+		either adb-mode [
+			pipe/write adb data
+		][
+			;-- TCP mode
+		]
 	]
 
 

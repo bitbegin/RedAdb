@@ -32,9 +32,9 @@ adb: context [
 	ID_QUIT: MKID "QUIT"
 
 
-	adbs: 0 ;make block! adb-driver/get-max-adbs
+	adbs: 0
 	adb-name: make string! 100
-	usb-mode: no
+
 
 	init: func [return: [integer!]][
 		adb-driver/init
@@ -53,8 +53,8 @@ adb: context [
 		adb			[integer!]
 		cmd			[string!]
 	][
-		either usb-mode [
-			;usb/receive-message device cmd
+		either adb-mode [
+			;adb/receive-message device cmd
 		][
 			;-- TCP mode
 		]
@@ -65,8 +65,8 @@ adb: context [
 		cmd			[integer!]
 		data		[string! binary!]
 	][
-		either usb-mode [
-			;usb/send-message device cmd data
+		either adb-mode [
+			;adb/send-message device cmd data
 		][
 			;-- TCP mode
 		]

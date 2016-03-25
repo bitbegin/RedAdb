@@ -241,7 +241,7 @@ fmt-msg-flags: FORMAT_MESSAGE_FROM_SYSTEM or FORMAT_MESSAGE_IGNORE_INSERTS
 
 #define MAX-ADBS-ALLOWED	10
 
-max-adbs: 0
+adbs: 0
 
 adb-info-struct: alias struct! [
 	device-set								[integer!]
@@ -339,7 +339,7 @@ init-device: func [return: [integer!]
 		if false = SetupDiEnumDeviceInterfaces dev-info 0 ANDROID_USB_CLASS_ID if-num interface-data [
 			last-error: GetLastError
 			if ERROR_NO_MORE_ITEMS = last-error [
-				max-adbs: if-num
+				adbs: if-num
 				last-adb-err: 0
 				return last-adb-err
 			]
@@ -416,7 +416,7 @@ init-device: func [return: [integer!]
 		if-num >= MAX-ADBS-ALLOWED
 	]
 
-	max-adbs: if-num
+	adbs: if-num
 	last-adb-err: 0
 	return last-adb-err
 ]
@@ -427,12 +427,13 @@ close-device: func [adb [adb-info-struct]][
 	if adb/device-set = 0 [SetupDiDestroyDeviceInfoList adb/device-set]
 ]
 
-adb-pipe: func [
-	adb		[adb-info-struct]
+pipe: func [
+	adb-index [integer!]
 	data	[red-string!]
 	write	[logic!]
 	return: [integer!]
 	/local
+		adb		[adb-info-struct]
 		s					[series!]
 		ovlap				[overlapped-struct]
 		interface 			[integer!]
@@ -441,6 +442,8 @@ adb-pipe: func [
 		num					[integer!]
 		p					[c-string!]
 ][
+	adb: get-adb-handle adb-index
+
 	s: GET_BUFFER(data)
 	p: as c-string! s/offset
 	len: length? p
