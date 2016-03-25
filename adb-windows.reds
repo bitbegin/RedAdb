@@ -264,7 +264,27 @@ get-adb-handle: func [
 	adb-ptr + adb-index
 ]
 
-out: make-c-string 256
+get-local-id: func [
+	adb-index [integer!]
+	return: [integer!]
+	/local
+		adb	[adb-info-struct]
+][
+	adb: adb-ptr + adb-index
+	adb/local-id
+]
+
+get-remote-id: func [
+	adb-index [integer!]
+	return: [integer!]
+	/local
+		adb	[adb-info-struct]
+][
+	adb: adb-ptr + adb-index
+	adb/remote-id
+]
+
+out: make-c-string 256							;to save memory
 get-error-msg: func [return: [c-string!]][
 	set-memory as byte-ptr! out as byte! 0 256
 	FormatMessage fmt-msg-flags 0 last-error 0 out 256 0
