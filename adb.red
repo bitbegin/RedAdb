@@ -124,23 +124,23 @@ adb: context [
 		msg
 	]
 
-	init-device: routine [return: [integer!]][
-		init-device*
+	init-adb: routine [return: [integer!]][
+		init-adb*
 	]
 
-	close-device: routine [
+	close-adb: routine [
 		adb		 		[integer!]
 	][
-		close-device* adb
+		close-adb* adb
 	]
 
-	close-devices: routine [
+	close-adbs: routine [
 		/local
 			iadb		[integer!]
 	][
 		iadb: adbs
 		while [iadb > 0][
-			close-device* iadb
+			close-adb* iadb
 			iadb: iadb - 1
 		]
 		adbs: 0
@@ -195,11 +195,11 @@ adb: context [
 		/local
 			ret		[integer!]
 	][
-		if ret: init-device [usb-mode: yes return ret]
+		if ret: init-adb [adb-mode: yes return ret]
 	]
 
 	close: func [][
-		if usb-mode [close-devices]
+		if adb-mode [close-adbs]
 	]
 
 	receive-message: func [
@@ -234,7 +234,7 @@ adb: context [
 				]
 			]
 			"WRTE" [
-				pkg: receive-message adb "ALL"
+				pkg: receive-message iadb "ALL"
 				send-message iadb A_OKAY ""
 			]
 			"CLSE" [
@@ -261,20 +261,20 @@ adb: context [
 				msg: [cmd A_VERSION MAX_PAYLOAD len sum magic]
 			]
 			cmd = A_OPEN [
-				msg: [cmd get-local-id adb 0 len sum magic]
+				msg: [cmd get-local-id iadb 0 len sum magic]
 			]
 			cmd = A_CLSE [
-				msg: [cmd 0 get-remote-id adb len sum magic]
+				msg: [cmd 0 get-remote-id iadb len sum magic]
 			]
 			any [cmd = A_WRTE cmd = A_OKAY] [
-				msg: [cmd get-local-id get-remote-id len sum magic]
+				msg: [cmd get-local-id iadb get-remote-id iadb len sum magic]
 			]
 		]
 		write iadb format-message reduce msg
 		unless empty? data [write iadb data]
 		if cmd = A_WRTE [
 			if empty? receive-message iadb "OKAY" [
-				close-device iadb
+				close-adb iadb
 			]
 		]
 	]

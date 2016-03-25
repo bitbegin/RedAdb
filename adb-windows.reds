@@ -337,7 +337,7 @@ set-timeout: func [adb [adb-info-struct] seconds [integer!] /local time [int-ptr
 buffer: make-c-string ADB-NAME-BUFFER-RAW-SIZE				;to save memory
 interface-name: make-c-string ADB-NAME-BUFFER-SIZE			;to save memory
 
-init-device*: func [return: [integer!]
+init-adb*: func [return: [integer!]
 	/local
 		dev-info			[integer!]
 		interface-data		[dev-interface-data]
@@ -461,7 +461,7 @@ init-device*: func [return: [integer!]
 	return last-adb-err
 ]
 
-close-device*: func [iadb [integer!]
+close-adb*: func [iadb [integer!]
 	/local
 		adb		[adb-info-struct]
 ][
@@ -513,7 +513,7 @@ pipe*: func [
 	if write [
 		if transferred/1 <> len [
 			unless zero? ovlap/hEvent [CloseHandle ovlap/hEvent]
-			close-device* iadb
+			close-adb* iadb
 			last-adb-err: ADB-WRITE-PIPO
 			return last-adb-err
 		]
