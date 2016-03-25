@@ -195,7 +195,9 @@ adb: context [
 		/local
 			ret		[integer!]
 	][
-		if ret: init-adb [adb-mode: yes return ret]
+		ret: init-adb
+		if ret [adb-mode: yes]
+		ret
 	]
 
 	close: func [][
