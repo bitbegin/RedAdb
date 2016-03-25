@@ -21,35 +21,35 @@ Red []
 
 adb: context [
 
-	bin-to-int: func [id [string!]][
+	str-to-int: func [id [string!]][
 		(to integer! id/1) or
 		(shift/left to integer! id/2 8) or
 		(shift/left to integer! id/3 16) or
 		(shift/left to integer! id/4 24)
 	]
 
-	A_SYNC: bin-to-int "SYNC"
-	A_CNXN: bin-to-int "CNXN"
-	A_OPEN: bin-to-int "OPEN"
-	A_OKAY: bin-to-int "OKAY"
-	A_CLSE: bin-to-int "CLSE"
-	A_WRTE: bin-to-int "WRTE"
-	A_VERSION: bin-to-int "^@^@^@^A"		;#{01000000}
+	A_SYNC: str-to-int "SYNC"
+	A_CNXN: str-to-int "CNXN"
+	A_OPEN: str-to-int "OPEN"
+	A_OKAY: str-to-int "OKAY"
+	A_CLSE: str-to-int "CLSE"
+	A_WRTE: str-to-int "WRTE"
+	A_VERSION: str-to-int "^@^@^@^A"		;#{01000000}
 
-	ID_STAT: bin-to-int "STAT"
-	ID_LIST: bin-to-int "LIST"
-	ID_ULNK: bin-to-int "ULNK"
-	ID_SEND: bin-to-int "SEND"
-	ID_RECV: bin-to-int "RECV"
-	ID_DENT: bin-to-int "DENT"
-	ID_DONE: bin-to-int "DONE"
-	ID_DATA: bin-to-int "DATA"
-	ID_OKAY: bin-to-int "OKAY"
-	ID_FAIL: bin-to-int "FAIL"
-	ID_QUIT: bin-to-int "QUIT"
+	ID_STAT: str-to-int "STAT"
+	ID_LIST: str-to-int "LIST"
+	ID_ULNK: str-to-int "ULNK"
+	ID_SEND: str-to-int "SEND"
+	ID_RECV: str-to-int "RECV"
+	ID_DENT: str-to-int "DENT"
+	ID_DONE: str-to-int "DONE"
+	ID_DATA: str-to-int "DATA"
+	ID_OKAY: str-to-int "OKAY"
+	ID_FAIL: str-to-int "FAIL"
+	ID_QUIT: str-to-int "QUIT"
 
-	PACKET_SIZE:						1024 * 64
-	MAX_PAYLOAD:						4096
+	PACKET_SIZE:							1024 * 64
+	MAX_PAYLOAD:							4096
 
 	adb-mode: no
 	msg: make binary! 4 * 6					;to save memory
@@ -226,10 +226,10 @@ adb: context [
 				;-- we no rsa function in red, so TBC
 			]
 			"OKAY" [
-				set-remote-id iadb bin-to-int skip pkg 4				;arg0
+				set-remote-id iadb str-to-int skip pkg 4				;arg0
 			]
 			"CNXN" [
-				if positive? bin-to-int skip pkg 12 [				;data-length
+				if positive? str-to-int skip pkg 12 [				;data-length
 					data: receive-message iadb "ALL"
 				]
 			]
@@ -248,8 +248,11 @@ adb: context [
 		iadb		[integer!]
 		cmd			[integer!]
 		data		[string! binary!]
-		/authed
-		/local len sum msg magic arg0
+		/local
+			len		[integer!]
+			sum		[integer!]
+			msg		[block!]
+			magic	[integer!]
 	][
 		if binary? data [data: to string! data]
 		magic: cmd xor -1
