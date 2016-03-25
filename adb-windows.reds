@@ -284,6 +284,26 @@ get-remote-id: func [
 	adb/remote-id
 ]
 
+set-local-id: func [
+	adb-index [integer!]
+	local-id [integer!]
+	/local
+		adb	[adb-info-struct]
+][
+	adb: adb-ptr + adb-index
+	adb/local-id: local-id
+]
+
+set-remote-id: func [
+	adb-index [integer!]
+	remote-id [integer!]
+	/local
+		adb	[adb-info-struct]
+][
+	adb: adb-ptr + adb-index
+	adb/remote-id: remote-id
+]
+
 out: make-c-string 256							;to save memory
 get-error-msg: func [return: [c-string!]][
 	set-memory as byte-ptr! out as byte! 0 256
@@ -314,8 +334,8 @@ set-timeout: func [adb [adb-info-struct] seconds [integer!] /local time [int-ptr
 
 #define ADB-NAME-BUFFER-RAW-SIZE	510
 #define ADB-NAME-BUFFER-SIZE		500
-buffer: make-c-string ADB-NAME-BUFFER-RAW-SIZE
-interface-name: make-c-string ADB-NAME-BUFFER-SIZE
+buffer: make-c-string ADB-NAME-BUFFER-RAW-SIZE				;to save memory
+interface-name: make-c-string ADB-NAME-BUFFER-SIZE			;to save memory
 
 init-device: func [return: [integer!]
 	/local

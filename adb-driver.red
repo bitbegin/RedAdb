@@ -21,32 +21,32 @@ Red []
 
 adb-driver: context [
 
-	MKID: func [id [string!]][
+	bin-to-int: func [id [binary!]][
 		(to integer! id/1) or
 		(shift/left to integer! id/2 8) or
 		(shift/left to integer! id/3 16) or
 		(shift/left to integer! id/4 24)
 	]
 
-	A_SYNC: MKID "SYNC"
-	A_CNXN: MKID "CNXN"
-	A_OPEN: MKID "OPEN"
-	A_OKAY: MKID "OKAY"
-	A_CLSE: MKID "CLSE"
-	A_WRTE: MKID "WRTE"
-	A_VERSION: MKID "^@^@^@^A"		;#{01000000}
+	A_SYNC: bin-to-int to binary! "SYNC"
+	A_CNXN: bin-to-int to binary! "CNXN"
+	A_OPEN: bin-to-int to binary! "OPEN"
+	A_OKAY: bin-to-int to binary! "OKAY"
+	A_CLSE: bin-to-int to binary! "CLSE"
+	A_WRTE: bin-to-int to binary! "WRTE"
+	A_VERSION: bin-to-int to binary! "^@^@^@^A"		;#{01000000}
 
-	ID_STAT: MKID "STAT"
-	ID_LIST: MKID "LIST"
-	ID_ULNK: MKID "ULNK"
-	ID_SEND: MKID "SEND"
-	ID_RECV: MKID "RECV"
-	ID_DENT: MKID "DENT"
-	ID_DONE: MKID "DONE"
-	ID_DATA: MKID "DATA"
-	ID_OKAY: MKID "OKAY"
-	ID_FAIL: MKID "FAIL"
-	ID_QUIT: MKID "QUIT"
+	ID_STAT: bin-to-int to binary! "STAT"
+	ID_LIST: bin-to-int to binary! "LIST"
+	ID_ULNK: bin-to-int to binary! "ULNK"
+	ID_SEND: bin-to-int to binary! "SEND"
+	ID_RECV: bin-to-int to binary! "RECV"
+	ID_DENT: bin-to-int to binary! "DENT"
+	ID_DONE: bin-to-int to binary! "DONE"
+	ID_DATA: bin-to-int to binary! "DATA"
+	ID_OKAY: bin-to-int to binary! "OKAY"
+	ID_FAIL: bin-to-int to binary! "FAIL"
+	ID_QUIT: bin-to-int to binary! "QUIT"
 
 	#define AUTH_TOKEN						1
 	#define AUTH_SIGNATURE					2
@@ -57,6 +57,7 @@ adb-driver: context [
 
 	adb-mode: no
 	msg: make binary! 4 * 6					;to save memory
+	pkg: make binary! MAX_PAYLOAD			;to save memory
 
 	get-adbs: routine [return: [integer!]][
 		adbs
@@ -74,6 +75,22 @@ adb-driver: context [
 		return: [integer!]
 	][
 		get-remote-id adb
+	]
+
+	set-local-id: routine [
+		adb [integer!]
+		local-id [integer!]
+		return: [integer!]
+	][
+		set-local-id adb local-id
+	]
+
+	set-remote-id: routine [
+		adb [integer!]
+		remote-id [integer!]
+		return: [integer!]
+	][
+		set-remote-id adb remote-id
 	]
 
 	get-error: routine [return: [string!]
@@ -121,6 +138,16 @@ adb-driver: context [
 	]
 
 	close-device: routine [
+		adb-index 		[integer!]
+		/local
+			adb			[adb-info-struct]
+			index		[integer!]
+	][
+		adb: get-adb-handle adb-index
+		close-device adb
+	]
+
+	close-devices: routine [
 		/local
 			adb			[adb-info-struct]
 			index		[integer!]
@@ -136,20 +163,28 @@ adb-driver: context [
 
 	pipo: routine [
 		adb-index 		[integer!]
-		data			[string!]
+		data			[string! binary!]
 		return: 		[integer!]
 		/write /read
 	][
 		either write [
-			pipo adb-index data 1
+			either type? data = binary! [
+				pipo adb-index to string! data 1
+			][
+				pipo adb-index data 1
+			]
 		][
-			pipo adb-index data 0
+			either type? data = binary! [
+				pipo adb-index to string! data 0
+			][
+				pipo adb-index data 0
+			]
 		]
 	]
 
 	read: func [
 		adb			[integer!]
-		data		[string!]
+		data		[string! binary!]
 	][
 		either adb-mode [
 			pipe/read adb data
@@ -178,7 +213,49 @@ adb-driver: context [
 	]
 
 	close: func [][
-		if usb-mode [close-device]
+		if usb-mode [close-devices]
+	]
+
+	receive-message: func [
+		adb			[integer!]
+		cmd			[string! block!]
+		return:		[string!]
+		/authed
+		/local
+			recv-cmd		[string!]
+			msg				[string!]
+			data			[string!]
+	][
+		until [
+			read adb pkg
+			recv-cmd: either pkg/1 = null [clear pkg][
+				if cmd = "ALL" [return pkg]
+				copy/part pkg 4
+			]
+			find cmd recv-cmd
+		]
+
+		switch/default recv-cmd [
+			"AUTH" [
+				;-- we no rsa function in red, so TBC
+			]
+			"OKAY" [
+				set-remote-id adb bin-to-int skip pkg 4				;arg0
+			]
+			"CNXN" [
+				if positive? bin-to-int skip pkg 12 [				;data-length
+					data: receive-message adb "ALL"
+				]
+			]
+			"WRTE" [
+				pkg: receive-message adb "ALL"
+				send-message adb A_OKAY ""
+			]
+			"CLSE" [
+				send-message adb A_CLSE ""
+			]
+		][pkg]
+		pkg
 	]
 
 	send-message: func [
@@ -213,16 +290,12 @@ adb-driver: context [
 		]
 		write adb format-message reduce msg
 		unless empty? data [write adb data]
-		;if cmd = A_WRTE [
-		;	if empty? receive-message device "OKAY" [
-		;		print "**ADB**: Error: Send message failed"
-		;		print ["message: " copy/part data 4]
-		;		close-device device
-		;		halt
-		;	]
-		;]
+		if cmd = A_WRTE [
+			if empty? receive-message adb "OKAY" [
+				;print "**ADB**: Error: Send message failed"
+				;print ["message: " copy/part data 4]
+				close-device adb
+			]
+		]
 	]
-
-
-
 ]
