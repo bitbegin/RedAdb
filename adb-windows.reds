@@ -264,7 +264,7 @@ get-adb-handle: func [
 	adb-ptr + adb-index
 ]
 
-get-local-id: func [
+get-local-id*: func [
 	adb-index [integer!]
 	return: [integer!]
 	/local
@@ -274,7 +274,7 @@ get-local-id: func [
 	adb/local-id
 ]
 
-get-remote-id: func [
+get-remote-id*: func [
 	adb-index [integer!]
 	return: [integer!]
 	/local
@@ -284,7 +284,7 @@ get-remote-id: func [
 	adb/remote-id
 ]
 
-set-local-id: func [
+set-local-id*: func [
 	adb-index [integer!]
 	local-id [integer!]
 	/local
@@ -294,7 +294,7 @@ set-local-id: func [
 	adb/local-id: local-id
 ]
 
-set-remote-id: func [
+set-remote-id*: func [
 	adb-index [integer!]
 	remote-id [integer!]
 	/local
@@ -305,13 +305,13 @@ set-remote-id: func [
 ]
 
 out: make-c-string 256							;to save memory
-get-error-msg: func [return: [c-string!]][
+get-error-msg*: func [return: [c-string!]][
 	set-memory as byte-ptr! out as byte! 0 256
 	FormatMessage fmt-msg-flags 0 last-error 0 out 256 0
 	out
 ]
 
-parse-adb-result: func [return: [c-string!]][
+parse-adb-result*: func [return: [c-string!]][
 	set-memory as byte-ptr! out as byte! 0 256
 	switch last-adb-err [
 		0						[copy-memory as byte-ptr! out as byte-ptr! "**ADB**: Init Success!" 100]
@@ -337,7 +337,7 @@ set-timeout: func [adb [adb-info-struct] seconds [integer!] /local time [int-ptr
 buffer: make-c-string ADB-NAME-BUFFER-RAW-SIZE				;to save memory
 interface-name: make-c-string ADB-NAME-BUFFER-SIZE			;to save memory
 
-init-device: func [return: [integer!]
+init-device*: func [return: [integer!]
 	/local
 		dev-info			[integer!]
 		interface-data		[dev-interface-data]
@@ -461,13 +461,17 @@ init-device: func [return: [integer!]
 	return last-adb-err
 ]
 
-close-device: func [adb [adb-info-struct]][
+close-device*: func [adb-index [integer!]
+	/local
+		adb		[adb-info-struct]
+][
+	adb: get-adb-handle adb-index
 	if adb/interface = 0 [WinUsb_Free adb/interface]
 	if adb/device = 0 [CloseHandle adb/device]
 	if adb/device-set = 0 [SetupDiDestroyDeviceInfoList adb/device-set]
 ]
 
-pipe: func [
+pipe*: func [
 	adb-index [integer!]
 	data	[red-string!]
 	write	[logic!]
@@ -509,7 +513,7 @@ pipe: func [
 	if write [
 		if transferred/1 <> len [
 			unless zero? ovlap/hEvent [CloseHandle ovlap/hEvent]
-			close-device adb
+			close-device* adb-index
 			last-adb-err: ADB-WRITE-PIPO
 			return last-adb-err
 		]
