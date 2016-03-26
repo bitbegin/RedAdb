@@ -473,7 +473,7 @@ close-adb*: func [iadb [integer!]
 
 pipe*: func [
 	iadb 	[integer!]
-	data	[red-string!]
+	data	[red-binary!]
 	write	[logic!]
 	return: [integer!]
 	/local
@@ -490,7 +490,7 @@ pipe*: func [
 
 	s: GET_BUFFER(data)
 	p: as c-string! s/offset
-	len: length? p
+	len: as integer! (s/tail - s/offset)
 
 	interface: adb/interface
 	ovlap: declare overlapped-struct

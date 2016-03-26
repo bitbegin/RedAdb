@@ -52,8 +52,14 @@ adb: context [
 	MAX_PAYLOAD:							4096
 
 	adb-mode: no
-	msg: make binary! 4 * 6					;to save memory
-	pkg: make binary! MAX_PAYLOAD			;to save memory
+
+	make-null-string: func [len [integer!]][
+		head insert/dup make string! len null len
+	]
+
+	make-null-binary: func [len [integer!]][
+		head insert/dup make binary! len null len
+	]
 
 	get-adbs: routine [return: [integer!]][
 		adbs
@@ -117,7 +123,11 @@ adb: context [
 		;data-crc32	[integer!]			;-- crc32 of data payload
 		;magic		[integer!]			;-- command ^ 0xffffffff
 		return: 	[binary!]
+		/local
+			msg		[binary!]
 	][
+		msg: make-null-binary 4 * 6
+		clear msg
 		foreach i blk [
 			append msg int-to-bin i
 		]
@@ -148,7 +158,7 @@ adb: context [
 
 	pipe-raw: routine [
 		iadb	 		[integer!]
-		data			[string!]
+		data			[binary!]
 		write			[logic!]
 		return: 		[integer!]
 	][
@@ -161,10 +171,11 @@ adb: context [
 		return: 		[integer!]
 		/write /read
 	][
+		if string? data [data: to binary! data]
 		either write [
-			pipe-raw iadb to string! data yes
+			pipe-raw iadb to binary! data yes
 		][
-			pipe-raw iadb to string! data no
+			pipe-raw iadb to binary! data no
 		]
 	]
 
@@ -195,8 +206,7 @@ adb: context [
 		/local
 			ret		[integer!]
 	][
-		ret: init-adb
-		if ret [adb-mode: yes]
+		if ret: init-adb [adb-mode: yes]
 		ret
 	]
 
@@ -207,43 +217,47 @@ adb: context [
 	receive-message: func [
 		iadb		[integer!]
 		cmd			[string! block!]
-		return:		[string!]
+		return:		[binary!]
 		/authed
 		/local
 			recv-cmd		[string!]
 			msg				[string!]
 			data			[string!]
+			buffer			[binary!]
+			s				[binary!]
 	][
 		until [
-			read iadb pkg
-			recv-cmd: either pkg/1 = null [clear pkg][
-				if cmd = "ALL" [return pkg]
-				copy/part pkg 4
+			buffer: make-null-binary MAX_PAYLOAD
+			read iadb buffer
+			recv-cmd: either buffer/1 = #{00} [clear buffer][
+				if cmd = to binary! "ALL" [return buffer]
+				copy/part buffer 4
 			]
-			find cmd recv-cmd
+			foreach c cmd [s: find recv-cmd to binary! c if s [break]]
+			s
 		]
 
-		switch/default recv-cmd [
-			"AUTH" [
+		switch/default s [
+			to binary! "AUTH" [
 				;-- we no rsa function in red, so TBC
 			]
-			"OKAY" [
-				set-remote-id iadb str-to-int skip pkg 4				;arg0
+			to binary! "OKAY" [
+				set-remote-id iadb str-to-int skip buffer 4				;arg0
 			]
-			"CNXN" [
-				if positive? str-to-int skip pkg 12 [				;data-length
+			to binary! "CNXN" [
+				if positive? str-to-int skip buffer 12 [				;data-length
 					data: receive-message iadb "ALL"
 				]
 			]
-			"WRTE" [
-				pkg: receive-message iadb "ALL"
+			to binary! "WRTE" [
+				buffer: receive-message iadb "ALL"
 				send-message iadb A_OKAY ""
 			]
-			"CLSE" [
+			to binary! "CLSE" [
 				send-message iadb A_CLSE ""
 			]
-		][pkg]
-		pkg
+		][buffer]
+		buffer
 	]
 
 	send-message: func [
@@ -256,7 +270,7 @@ adb: context [
 			msg		[block!]
 			magic	[integer!]
 	][
-		if binary? data [data: to string! data]
+		if string? data [data: to binary! data]
 		magic: cmd xor -1
 		len: length? data
 		sum: 0
@@ -282,5 +296,11 @@ adb: context [
 				close-adb iadb
 			]
 		]
+	]
+
+	test: func [][
+		send-message 0 A_CNXN "host::^@"
+		print "send msg over"
+		receive-message 0 ["AUTH" "CNXN"]
 	]
 ]
