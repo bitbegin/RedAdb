@@ -398,7 +398,6 @@ init-adb*: func [return: [integer!]
 		]
 		SetupDiGetDeviceInterfaceDetail dev-info interface-data buffer ADB-NAME-BUFFER-RAW-SIZE required-size 0
 		copy-memory as byte-ptr! interface-name as byte-ptr! (buffer + 4) ADB-NAME-BUFFER-SIZE ;length? as c-string! (buffer + 4)
-		print-line ["interface-name: " interface-name]
 		dev-handle: CreateFile interface-name
 						GENERIC_READ or GENERIC_WRITE
 						FILE_SHARE_READ or FILE_SHARE_WRITE
