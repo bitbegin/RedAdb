@@ -297,10 +297,4 @@ adb: context [
 			]
 		]
 	]
-
-	test: func [][
-		send-message 0 A_CNXN "host::^@"
-		print "send msg over"
-		receive-message 0 ["AUTH" "CNXN"]
-	]
 ]

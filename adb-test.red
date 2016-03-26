@@ -10,5 +10,9 @@ either result <> 0 [
 	print ["last system error: " adb/get-error]
 ][
 	print ["has " adb/get-adbs " adb devices" ]
-	adb/test
+
+	adb/send-message 0 adb/A_CNXN "host::^@"
+	print "send msg"
+	adb/receive-message 0 ["AUTH" "CNXN"]
+	print "recived msg"
 ]
