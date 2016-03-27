@@ -2,20 +2,15 @@ Red []
 
 #system [
 	#include %adb-windows.reds
-	int-to-bin*: func [int [integer!] return: [red-binary!]
+	int-to-bin*: func [int [integer!] bin [red-binary!]
 		/local
-			bin [red-binary!]
-			b   [red-binary!]
 			p	[int-ptr!]
 			s	[series!]
 	][
-		bin: as red-binary! stack/arguments
-		b: binary/make-at as cell! bin 4
-		s: GET_BUFFER(b)
+		s: GET_BUFFER(bin)
 		p: as int-ptr! s/tail
 		p/1: int
 		s/tail: as cell! p + 1
-		b
 	]
 ]
 
@@ -109,9 +104,9 @@ adb: context [
 		string/load text length? text UTF-8
 	]
 
-	int-to-bin: routine [int [integer!] return: [binary!]
+	int-to-bin: routine [int [integer!] bin [binary!]
 	][
-		int-to-bin* int
+		int-to-bin* int bin
 	]
 
 	format-message: func [
@@ -125,11 +120,15 @@ adb: context [
 		return: 	[binary!]
 		/local
 			msg		[binary!]
+			bin		[binary!]
 	][
 		msg: make-null-binary 4 * 6
+		bin: make binary! 4
 		clear msg
 		foreach i blk [
-			append msg int-to-bin i
+			clear bin
+			int-to-bin i bin
+			append msg bin
 		]
 		msg
 	]
@@ -206,7 +205,7 @@ adb: context [
 		/local
 			ret		[integer!]
 	][
-		if ret: init-adb [adb-mode: yes]
+		if all [ret: init-adb get-adbs] [adb-mode: yes]
 		ret
 	]
 
